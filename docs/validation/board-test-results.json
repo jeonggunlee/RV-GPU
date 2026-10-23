@@ -1,0 +1,35 @@
+{
+  "device": "xc7a200t",
+  "uart": "/dev/ttyUSB1",
+  "baud": 115200,
+  "protocol": "GPU2",
+  "bitstream": "build/a7_simt_gpu.bit",
+  "bitstream_sha256": "e909481e032e6aa3575dfa7abac7677c2a75fe6d025718cbde53cb6c8c5b73ad",
+  "frames": [
+    {
+      "frame": 1,
+      "captured_at": "2026-10-23T12:43:33.990636+09:00",
+      "pixels": 4096,
+      "mismatches": 0,
+      "warp_error_bitmap": 0,
+      "payload_sha256": "34761724bd9ff4331d73e57bf33cdd04d1bddc5e34200ce2b795e1f8b7b5b2db"
+    },
+    {
+      "frame": 2,
+      "captured_at": "2026-10-23T12:43:36.417935+09:00",
+      "pixels": 4096,
+      "mismatches": 0,
+      "warp_error_bitmap": 0,
+      "payload_sha256": "34761724bd9ff4331d73e57bf33cdd04d1bddc5e34200ce2b795e1f8b7b5b2db"
+    },
+    {
+      "frame": 3,
+      "captured_at": "2026-10-23T12:43:38.845573+09:00",
+      "pixels": 4096,
+      "mismatches": 0,
+      "warp_error_bitmap": 0,
+      "payload_sha256": "34761724bd9ff4331d73e57bf33cdd04d1bddc5e34200ce2b795e1f8b7b5b2db"
+    }
+  ],
+  "note": "Repeated transmission of one boot-time kernel execution; no on-board cycle measurement or power-cycle test."
+}
