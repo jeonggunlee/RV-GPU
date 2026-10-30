@@ -4,6 +4,8 @@ Microphase A7-Lite **XC7A200T-FBG484-2**용 소형 RISC-V SIMT GPU입니다.
 **공유 fetch/decode 하나와 8개의 ALU lane을 4개의 warp가 번갈아 사용**합니다.
 warp별 PC·active mask·분기 스택, thread별 레지스터, shared memory, block barrier를 구현했습니다.
 
+![RV-GPU 구조도: 4개 warp가 공유하는 8개 ALU lane, ID CSR, 분기 제어와 메모리](docs/assets/rv_gpu_architecture.png)
+
 이전 독립 RV32I 코어 4개의 manycore 설계와 다릅니다. 이전 예제는 `legacy/manycore/`에
 보관했고, `rtl/rv32i_core.v`는 이전 명령어 테스트의 기준 코어로만 남겨 두었습니다.
 새 FPGA top은 `simt_sm`을 사용하며 scalar core를 인스턴스화하지 않습니다.
