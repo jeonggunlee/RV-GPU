@@ -56,6 +56,11 @@ module simt_decode(
             7'h73: begin
                 if(insn==32'h00100073) kind=7;
                 else if(insn==32'h00000073) kind=11;
+                // Project read-only ID CSRs: CSRRS rd, csr, x0 (csrr).
+                // Reject writes, other CSR forms and unimplemented addresses.
+                // This subset does not claim full Zicsr support.
+                else if(f3==2 && rs1==0 && insn[31:22]==10'b1100110000)
+                    kind=12; // 0xCC0..0xCC3
             end
             7'h0b: begin
                 if(f3==0 && rs1==0 && rd==0) kind=8; // SSY signed I-immediate, relative to PC

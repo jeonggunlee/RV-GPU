@@ -13,7 +13,7 @@ else
     echo "Icarus Verilog is required. Install iverilog and vvp on PATH." >&2
     exit 1
 fi
-for tb in tb_core tb_simt_isa tb_simt_control tb_gpu tb_uart; do
+for tb in tb_core tb_simt_isa tb_simt_control tb_simt_csr tb_gpu tb_uart; do
     "${compiler[@]}" -g2012 -s "$tb" -o "build/$tb" "${rtl[@]}" "sim/$tb.sv"
     "${runtime[@]}" "build/$tb"
     if [[ $tb == tb_gpu ]]; then

@@ -160,3 +160,14 @@ BRAM control의 비동기 reset 경고를 방지하기 위해 SM reset을 최종
 
 `docs/validation/`은 검증 당시 리포트의 보존본입니다. 새 빌드 결과는 `build/`에 생성됩니다.
 비트스트림과 빌드 중간 파일은 Git에 포함하지 않으며 `make bit`로 생성합니다.
+
+### 읽기 전용 ID CSR
+
+`firmware/simt.inc`의 `READ_CSR rd, CSR_THREAD_ID/CSR_WARP_ID/CSR_LANE_ID/CSR_NUM_THREADS`로
+ID를 조회할 수 있습니다. 주소는 0xCC0~0xCC3이며 `CSRRS rd, csr, x0` 읽기만 지원합니다.
+기존 a0/a1 초기화는 유지합니다. 전체 Zicsr 지원은 아닙니다.
+`make test`에 모든 warp/lane, 활성 mask, 잘못된 CSR 접근 검증을 포함했습니다.
+자세한 동작은 [설계 문서](docs/architecture.md#읽기-전용-id-csr)를 참고하세요.
+
+기존 PDF와 보드 자원·타이밍·실물 검증 리포트는 ID CSR 추가 전 설계의 기록입니다.
+이번 CSR 변경의 보드 결과로 해석하지 마세요.

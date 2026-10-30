@@ -47,6 +47,45 @@ fan-in을 다시 만들기 때문에, 빌드는 `opt_design -directive NoBramPow
 이는 [AMD의 opt_design 옵션](https://docs.amd.com/r/2021.1-English/ug835-vivado-tcl-commands/opt_design)이며
 DRC 경고를 숨기는 waiver는 적용하지 않는다.
 
+## 읽기 전용 ID CSR
+
+일반 레지스터 x0..x31과 별도로 다음 네 개의 프로젝트 전용 CSR을 제공한다.
+ID는 별도 RAM에 저장하지 않고 실행 중인 warp 번호와 물리 lane 번호에서 생성한다.
+현재는 SM 하나에서 block 하나만 실행하므로 thread ID는 block 내부 번호이다.
+
+| 주소 | 이름 | 활성 lane에 반환하는 값 |
+|---|---|---|
+| 0xCC0 | CSR_THREAD_ID | warp_id * 8 + lane_id (0..31) |
+| 0xCC1 | CSR_WARP_ID | warp_id (0..3), warp 내 동일 |
+| 0xCC2 | CSR_LANE_ID | lane_id (0..7) |
+| 0xCC3 | CSR_NUM_THREADS | 32 |
+
+지원 인코딩은 `CSRRS rd, csr, x0` (`csrr rd, csr` 의사 명령)뿐이다.
+SYSTEM opcode=0x73, funct3=2, rs1=0, csr=위 네 주소로 한정한다.
+`rd=x0` 읽기도 유효하지만 결과를 버린다. 비활성 lane의 레지스터는 보존한다.
+일반 ALU와 같은 PICK/FETCH/EXEC 3클럭으로 실행하며 내부 kind는 12이다.
+
+CSR 쓰기, 다른 CSR 명령 형태(CSRRC/CSRRSI 등), 미지원 주소는 fault code 2로
+warp를 정지시킨다. 목적 레지스터를 쓰지 않고 fault PC를 유지한다.
+CSRRS의 rs1 필드가 x0가 아니면 그 레지스터의 실제 값이 0이어도 거부한다.
+전체 Zicsr 확장이나 privileged trap CSR을 구현한 것은 아니다.
+
+기존 launch ABI (`a0=tid`, `a1=32`)는 유지한다. ID를 일반 레지스터에서 덮어써도
+CSR에서 다시 읽을 수 있다. `firmware/simt.inc`는 RV32I 빌드에서도 사용할 수 있는
+`READ_CSR` 매크로를 제공한다. 일반 ALU의 피연산자로 쓰려면 GPR로 읽어야 한다.
+
+```asm
+.include "firmware/simt.inc"
+READ_CSR a0, CSR_THREAD_ID
+READ_CSR t0, CSR_WARP_ID
+READ_CSR t1, CSR_LANE_ID
+READ_CSR a1, CSR_NUM_THREADS
+```
+
+`sim/tb_simt_csr.sv`는 SYSTEM 인코딩의 모든 CSR 주소/funct3/rs1 조합,
+32개 thread의 반환값, 홀수/짝수 활성 mask, x0, 잘못된 접근의 부작용 억제와
+재시작을 검증한다. selftest 커널도 a0/a1을 덮어쓴 뒤 CSR에서 복원한다.
+
 ## 발행과 스케줄링
 
 제어 상태는 `IDLE → INIT → PICK → FETCH → EXEC`이다.
@@ -162,7 +201,7 @@ runnable warp가 없어진 시점에 기다리던 warp를 deadlock 오류로 정
 | 0x80 | instruction address 비정렬; 0을 정상 상태로 예약해 별도 인코딩 |
 
 `error[warp]`와 packed `fault_codes[warp*8 +: 8]`가 원인을 보관한다.
-오류 명령의 warp PC는 유지된다. 예외 handler/CSR은 없다.
+오류 명령의 warp PC는 유지된다. 예외 handler와 trap 상태 CSR은 없다.
 다른 runnable warp는 계속 실행하며, 모두 종료/오류 정지하면 `done=1`이 된다.
 `start`는 idle에서만 수락하며 busy 중에는 무시한다. reset은 진행 중 명령을 중단한다.
 
@@ -171,7 +210,8 @@ runnable warp가 없어진 시점에 기다리던 warp를 deadlock 오류로 정
 RV32I 정수 ALU, LUI/AUIPC, conditional branch, JAL/JALR, LB/LH/LW/LBU/LHU,
 SB/SH/SW, FENCE를 지원한다. FENCE는 순차 메모리 구조에서 no-op이다.
 EBREAK는 실행 환경의 정상 종료, ECALL은 오류 정지이다.
-M/A/F/D/C 확장, FENCE.I, CSR, interrupt, privileged mode는 없다.
+M/A/F/D/C 확장, FENCE.I, 전체 Zicsr, interrupt, privileged mode는 없다.
+CSR 접근은 위의 읽기 전용 ID 조회만 지원한다.
 
 현재 GCC는 custom reconvergence 명령을 자동 삽입하지 않는다.
 그래서 실행 가능한 데모와 제어 흐름 테스트는 RV32I assembly로 제공한다.
